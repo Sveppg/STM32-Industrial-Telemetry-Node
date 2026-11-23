@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stm32f411xe.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -76,7 +77,7 @@ void gpio_init(void)
 {
     // Takt für Port D einschalten
     RCC->AHB1ENR |= (1U << 3);
-    (void)RCC->AHB1ENR;
+    (void)RCC->AHB1ENR;// dummy -> läufts auch?
 
     // PD12, PD13, PD14: Mode-Bits löschen
     GPIOD->MODER &= ~((3U << 24) |
@@ -98,18 +99,15 @@ void gpio_init(void)
     GPIOD->ODR &= ~ALLE_LEDS;
 }
 
-// SysTick für 1 ms bei 16 MHz einrichten
-void systick_init(void)
-{
-    SysTick->LOAD = 15999;
-    SysTick->VAL = 0;
-    SysTick->CTRL = 0x5;
-}
 
 // Eigene Delay-Funktion
 void delay_ms(uint32_t n)
 {
-    for (uint32_t i = 0; i < n; i++)
+    SysTick->LOAD = 16000;
+    SysTick->VAL = 0;
+    SysTick->CTRL = 0x5;
+
+    for (int i = 0; i < n; i++)
     {
         while ((SysTick->CTRL & (1U << 16)) == 0)
         {
@@ -126,17 +124,12 @@ void ampel_set(uint32_t leds)
 int main(void)
 {
     gpio_init();
-    systick_init();
 
     while (1)
     {
         // GRÜN: 4 Sekunden
         ampel_set(GRUEN);
         delay_ms(4000);
-
-        // ORANGE: 1 Sekunde
-        ampel_set(ORANGE);
-        delay_ms(1000);
 
         // ROT: 4 Sekunden
         ampel_set(ROT);
